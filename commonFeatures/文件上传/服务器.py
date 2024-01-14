@@ -80,7 +80,7 @@ def run():
                 print("接收到文件，要保存到：", file_name)
                 recv_file(conn, file_name)
 
-        conn.close()
+        conn.close()  # 四次挥手
     sock.close()
 
 
