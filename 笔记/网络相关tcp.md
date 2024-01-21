@@ -472,24 +472,24 @@ sock.close()
 >   ```python
 >   import socket
 >   import struct
->     
+>       
 >   client = socket.socket()
 >   client.connect(('127.0.0.1', 8001))
->     
+>       
 >   # 第一条数据
 >   data1 = 'alex正在吃'.encode('utf-8')
->     
+>       
 >   header1 = struct.pack('i', len(data1))
->     
+>       
 >   client.sendall(header1)
 >   client.sendall(data1)
->     
+>       
 >   # 第二条数据
 >   data2 = '翔'.encode('utf-8')
 >   header2 = struct.pack('i', len(data2))
 >   client.sendall(header2)
 >   client.sendall(data2)
->     
+>       
 >   client.close()
 >   ```
 
@@ -724,7 +724,7 @@ sock.setblocking(False) # 加上就变为了非阻塞
 sock.bind(('127.0.0.1', 8001))
 sock.listen(5)
 
-# 非阻塞
+# 非阻塞，由于是非阻塞的，正常不会阻塞，会向下执行，所以走到这里没有连接进来，就会报错
 conn, addr = sock.accept()
 
 # 非阻塞
@@ -783,12 +783,13 @@ inputs = [server, ] # socket对象列表 -> [server, 第一个客户端连接con
 
 while True:
     # 当 参数1 序列中的socket对象发生可读时（accetp和read），则获取发生变化的对象并添加到 r列表中。
-    # r = []
-    # r = [server,]
-    # r = [第一个客户端连接conn,]
-    # r = [server,]
-    # r = [第一个客户端连接conn，第二个客户端连接conn]
-    # r = [第二个客户端连接conn,]
+    # r的变化
+        # r = [] 默认
+        # r = [server,] 当有连接进来
+        # r = [第一个客户端连接conn,] 当有数据从客户端发送过来
+        # r = [server,] 当又有新连接进来
+        # r = [第一个客户端连接conn，第二个客户端连接conn] 当在select中的两个客户端同时发过来了数据
+        # r = [第二个客户端连接conn,] 当第二个客户发送关闭连接时
     r, w, e = select.select(inputs, [], [], 0.05)
     for sock in r:
         # server
@@ -797,14 +798,14 @@ while True:
             print("有新连接")
             # conn.sendall()
             # conn.recv("xx")
-            inputs.append(conn)
+            inputs.append(conn)  # 将连接放入监听列表中，让select模块监听这个连接
         else:
             data = sock.recv(1024)
             if data:
                 print("收到消息：", data)
             else:
                 print("关闭连接")
-                inputs.remove(sock)
+                inputs.remove(sock)  # 当关闭连接的时候，需要删掉select中当前
 	# 干点其他事 20s
 """
 优点：
